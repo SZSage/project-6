@@ -3,13 +3,19 @@ Replacement for RUSA ACP brevet time calculator
 (see https://rusa.org/octime_acp.html)
 
 """
-
+import os # for os.environ
 import flask
 from flask import request
 import arrow  # Replacement for datetime, based on moment.js
 import acp_times  # Brevet time calculations
-import config
-from mypymongo import brevet_insert, brevet_find # import from mypymongo.py 
+#from mypymongo import brevet_insert, brevet_find # import from mypymongo.py 
+
+# so it doesn't crash when I run it
+def brevet_insert(*args, **kwargs):
+    pass
+
+def brevet_find(*args, **kwargs):
+    pass
 
 import logging
 import traceback
@@ -21,7 +27,6 @@ import traceback
 logging.basicConfig(level=logging.DEBUG)
 app = flask.Flask(__name__, static_folder="static")
 app.debug = True
-CONFIG = config.configuration() # use brevet_insert and brevet_find
 
 ###
 # Pages
@@ -128,10 +133,10 @@ def _calc_times():
 
 #############
 
-app.debug = CONFIG.DEBUG
+app.debug = os.environ["DEBUG"]
 if app.debug:
     app.logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
-    print("Opening for global access on port {}".format(CONFIG.PORT))
-    app.run(port=CONFIG.PORT, host="0.0.0.0")
+    # write fail case incase PORT and DEBUG are not in the environment variables
+    app.run(port=os.environ["PORT"], host="0.0.0.0")
