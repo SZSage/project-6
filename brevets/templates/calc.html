@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <title>ACP Controle Times</title>
+      <meta charset="utf-8">
+      <!-- 'viewport' is used by bootstrap to respond to device size -->
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      <!-- Bootstrap includes javascript and css  (must follow jquery) -->
+      <link
+         rel="stylesheet"
+         href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+         integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l"
+         crossorigin="anonymous">
+      <!-- Javascript:  JQuery from a content distribution network (CDN) -->
+      <script
+         src="https://code.jquery.com/jquery-3.5.1.min.js"
+         integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+         crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+         integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+         crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js"
+         integrity="sha384-+YQ4JLhjyBLPDQt//I+STsc9iw4uQqACwlvpslubQzn4u2UU2UFM80nGisd026JF"
+         crossorigin="anonymous"></script>
+      <!-- moment.js is the JavaScript equivalent of arrow.py -->
+      <script
+      src="{{ url_for('static', filename="js/moment.min.js") }}"></script>
+   </head>
+   <!-- Our own stylesheet -->
+   <link rel="stylesheet" href="/static/css/calc.css" />
+   <body>
+      <div class="container">
+         <h1>ACP Brevet Times</h1>
+         <p>This worksheet is for ACP-sanctioned brevets between 200 and 1000 kilometers.</p>
+         <!--
+            If there are any warnings or other messages from a prior
+            request to the server,
+            they appear above the rest of the content, just until the next
+            action.  (This is only on request/response transactions that
+            result in regenerating the page, not on every request.)
+            -->
+         {% with messages = get_flashed_messages() %}
+         {% if messages %}
+         <ul class="flashes">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+         </ul>
+         {% endif %}
+         {% endwith %}
+         <!-- Design on bootstrap grid -->
+         <form role="form">
+            <div class="row">
+               <div class="col-md-4">
+                  <label>Distance</label>
+                  <select name="distance" id="brevet_dist_km">
+                     <option value="200">200km</option>
+                     <option value="300">300km</option>
+                     <option value="400">400km</option>
+                     <option value="600">600km</option>
+                     <option value="1000">1000km</option>
+                  </select>
+               </div>
+               <!-- columns 1 to 4  -->
+               <div class="col-md-6">
+                  <label>Begins at</label>
+                  <input type="datetime-local" name="begin_date" id="begin_date" value="2021-01-01T00:00" />
+                  <!-- added Update and Submit button -->
+                  <button id="fetch">Display</button> 
+                  <button id="insert">Submit</button> 
+               </div>
+               <!-- columns 5 to 10 -->
+            </div>
+            <!-- row -->
+            <br />  <!-- a little vertical space -->
+            <!-- Although we do not use tables for general page layout, they are
+               appropriate for something that really is a table, like this
+               one.  We allocate it the full 12 columns of the bootstrap grid.
+               -->
+            <div class="row">
+               <div class="col-md-12">
+                  <table class="control_time_table">
+                     <tr>
+                        <th> Miles </th>
+                        <th> Km </th>
+                        <th>Location</th>
+                        <th>Open</th>
+                        <th>Close</th>
+                        <th>Notes</th>
+                     </tr>
+                     {% for row in range(20) %}
+                     <!-- worry about the 4 input boxes mi, km, open, close (20 of these)
+                     -->
+                     <tr class="control">
+                        <!-- Dist (mi) -->
+                        <td><input name="miles" type="number" step="0.00001"
+                           min="0" max="900" /></td>
+                        <!-- Dist (km) -->
+                        <td><input name="km" type="number" step="0.00001"
+                           min="0" max="1100" /> </td>
+                        <!-- Location (optional) -->
+                        <td><input name="location" type="text"
+                           placeholder="Optional location name"
+                           size="20" /> </td>
+                        <!-- Open time (read only, set by JavaScript function -->
+                        <td><input name="open" type="datetime-local" readonly value="" /></td>
+                        <!-- Close time (read only, set by JavaScript function -->
+                        <td><input name="close" type="datetime-local" readonly value="" /></td>
+                        <!-- Notes (error messages for this row) -->
+                        <td class="notes"> &nbsp; </td>
+                     </tr>
+                     {% endfor %}
+                  </table>
+               </div>
+               <!-- col -->
+            </div>
+            <!-- row -->
+         </form>
+         <script type="text/javascript">
+            var SCRIPT_ROOT = {{ request.script_root|tojson|safe }} ;
+            var TIME_CALC_URL = SCRIPT_ROOT + "/_calc_times";
+            var FETCH_URL = SCRIPT_ROOT + "/_find_brevet";
+            var INSERT_URL = SCRIPT_ROOT + "/_insert_brevet";
+
+
+            // FIX ME!
+            // Right now, only the kilometers are passed
+            // you need to pass much more!
+            // View flask_brevets.py for details.
+            function calc_times(control) {
+               // added distance and begin_date
+               var brevit_dist = document.getElementById("brevet_dist_km").value;
+               var start_time = document.getElementById("begin_date").value;
+               var km = control.find("input[name='km']").val();
+               var open_time_field = control.find("input[name='open']");
+               var close_time_field = control.find("input[name='close']");
+
+               console.log("start_time = " + start_time);
+               
+              $.getJSON(TIME_CALC_URL, {km: km, brevit_dist: brevit_dist, start_time: start_time}).done( // supply start_time and brevit distance
+                function(data) {
+                   var times = data.result;
+                   console.log("Got a response: ");
+                   console.log("Response.open = " + times.open);
+                   // This part will automatically fill the open and close slots,
+                   // so don't worry about those.
+                   open_time_field.val(moment(times.open).format("YYYY-MM-DDTHH:mm"));
+                   close_time_field.val(moment(times.close).format("YYYY-MM-DDTHH:mm"));
+                 }
+               ).fail(function(err){
+                 // In case you get an error...
+                 console.log("Error!");
+                 console.log(err);
+               });
+            }
+
+            // define events for Update and Submit buttons
+            $(document).ready(function(){
+             // Do the following when the page is finished loading
+
+               $('input[name="miles"]').change(
+                   function() {
+                       var miles = parseFloat($(this).val());
+                       var km = (1.609344 * miles).toFixed(6) ;
+                       console.log("Converted " + miles + " miles to " + km + " kilometers");
+                       var control_entry = $(this).parents(".control")
+                       var target = control_entry.find("input[name='km']");
+                       target.val( km );
+                       // Then calculate times for this entry
+                       calc_times(control_entry);
+                     });
+
+               $('input[name="km"]').change(
+                   function() {
+                       var km = parseFloat($(this).val());
+                       var miles = (0.621371 * km).toFixed(6) ;
+                       console.log("Converted " + km + " km to " + miles + " miles");
+                       var control_entry = $(this).parents(".control")
+                       var target = control_entry.find("input[name='miles']");
+                       target.val( miles );
+                       // Then calculate times for this entry
+                       calc_times(control_entry);
+                    });
+   
+
+               // Insert click event
+               $('#insert').click(
+                  function(event) {
+                  event.preventDefault();
+                  console.log("Submit button clicked")
+                  // gets begin date and brevet distance
+                  var brevet_dist = document.getElementById("brevet_dist_km").value;
+                  var begin_date = document.getElementById("begin_date").value;
+                  // create an empty list to hold the checkpoints
+                  var checkpoints = [];
+
+                  // loop through each checkpoint and add to checkpoints list
+                  $('.control').each(function() {
+                     var item = $(this);
+                     var miles = item.find("input[name='miles']").val();
+                     var km = item.find("input[name='km']").val();
+                     var location = item.find("input[name='location']").val();
+                     var open = item.find("input[name='open']").val();
+                     var close = item.find("input[name='close']").val();
+
+                     // if the km is not empty, then push to checkpoints list
+                     if (km != "") {
+                        checkpoints.push( {
+                           "miles": miles,
+                           "km": km,
+                           "location": location,
+                           "open": open,
+                           "close": close
+                        });
+                     }
+                  });
+                  
+                  // Create a dictionary to hold the data
+                  var new_data = {  
+                     "brevet_dist": brevet_dist,
+                     "begin_date": begin_date,
+                     "checkpoints": checkpoints
+                  };
+                  // Send data to Flask using AJAX
+                  $.ajax({
+                     // Expecting JSON response from Flask 
+                     dataType: "json",
+                     // Specify the content type
+                     contentType: "application/json", 
+                     // URL: where to send data speficied above
+                     url: INSERT_URL,
+                     // Send the data as a POST request
+                     type: "POST",
+                     // Convert dictionary to JSON string
+                     data: JSON.stringify(new_data),
+                     // What to do if the request succeeds
+                     success: function(data){
+                        // Recall: 1 was success, 0 was failure
+                        if (data.status == 1) {
+                              console.log("Successfully inserted! Response: ", data);
+                              // Clear the form fields
+                              $('.control').each(function(index) {
+                                 // Get the current item
+                                 var item = $(this);  
+                                 item.find("input[name='miles']").val("");
+                                 item.find("input[name='km']").val("");
+                                 item.find("input[name='location']").val("");
+                                 item.find("input[name='open']").val("");
+                                 item.find("input[name='close']").val("");
+                              });
+                           }
+                        else {
+                              console.log("Insertion failed: ", data);
+                        }
+                     },
+                     // On error
+                     error: function(err){
+                     console.log("Error: ", err);
+                     }
+                  });
+               });
+  
+               $('#fetch').click(
+               function(event) {
+                  event.preventDefault();
+                  // We use getJSON because we're sending a GET request.
+                  // getJSON is essentially running $.ajax as well, but sets the defaults for us.
+                  $.getJSON(FETCH_URL).done( 
+                     function(data) {
+                        console.log(data);
+                        // Recall: 1 was success, 0 was failure
+                        if (data.status == 1) {
+                           console.log("Successfully fetched! Response: ", data);
+                           // Get the brevet distance and start time
+                           var brevet_dist = data.result.brevet;
+                           var start_time = data.result.start;
+                           var checkpoints = data.result.checkpoints;
+                           var num_items = checkpoints.length;
+
+                           // Set the brevet and start values
+                           $('#brevet_dist_km').val(brevet_dist);
+                           $('#begin_date').val(start_time);
+                           // For each row in the HTML table
+                           $('.control').each(function(index) {
+                              var item = $(this); // This is our row
+                              // Get the checkpoint at this index
+                              var checkpoint = checkpoints[index];
+                              // If the index is less than the number of checkpoints
+                              if (index < num_items) {
+                                 // Clear the fields
+                                 item.find("input[name='km']").val('');
+                                 item.find("input[name='miles']").val('');
+                                 item.find("input[name='open']").val('');
+                                 item.find("input[name='close']").val('');
+                                 item.find("input[name='location']").val('');
+                                 // Set the fields to the values from the checkpoint
+                                 item.find("input[name='km']").val(checkpoints[index].km);
+                                 item.find("input[name='miles']").val(checkpoints[index].miles);
+                                 item.find("input[name='open']").val(checkpoints[index].open);
+                                 item.find("input[name='close']").val(checkpoints[index].close);
+                                 item.find("input[name='location']").val(checkpoints[index].location);
+                              }
+                           });
+                        }
+                        else {
+                           console.log("Fetch failed: ", data);
+                        }
+                     }
+                     ).fail(function(err){
+                     // In case you get an error...
+                     console.log("Error!");
+                     console.log(err);
+                     });
+                  });
+            
+            });
+         </script>
+      </div>
+   </body>
+</html>
