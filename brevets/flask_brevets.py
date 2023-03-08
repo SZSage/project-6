@@ -6,17 +6,10 @@ Replacement for RUSA ACP brevet time calculator
 import os # for os.environ
 import flask
 from flask import request
-import arrow  # Replacement for datetime, based on moment.js
+import arrow
+import requests  # Replacement for datetime, based on moment.js
 import acp_times  # Brevet time calculations
 #from mypymongo import brevet_insert, brevet_find # import from mypymongo.py 
-
-# so it doesn't crash when I run it
-def brevet_insert(*args, **kwargs):
-    pass
-
-def brevet_find(*args, **kwargs):
-    pass
-
 import logging
 import traceback
 
@@ -26,12 +19,47 @@ import traceback
 
 logging.basicConfig(level=logging.DEBUG)
 app = flask.Flask(__name__, static_folder="static")
-app.debug = True
+app.debug = True if "DEBUG" not in os.environ else os.environ["DEBUG"]
+port_num = True if "PORT" not in os.environ else os.environ["PORT"]
+app.logger.setLevel(logging.DEBUG)
+
+API_ADDR = os.environ["API_ADDR"]
+API_PORT = os.environ["API_PORT"]
+API_URL = f"http://{API_ADDR}:{API_PORT}/api/"
+
+
+def brevet_insert(brevet_dist, begin_time, checkpoints):
+    """
+    Inserts a new to-do list into the database by calling the API.
+    
+    Inputs a brevet distance (int), begin time (string), and checkpoints (list of dictionaries)
+    """
+    
+    _id = requests.post(f"{API_URL}/brevets", json = {"brevet_dist": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}).json
+    return _id
+
+
+def brevet_find():
+    """
+    Obtains the newest document in the "lists" collection in database
+    by calling the RESTful API.
+
+    Returns brevet distance (int), begin time (string), and checkpoints (list of dictionaries) as a tuple.
+    """
+    # Get documents (rows) in our collection (table),
+    # Sort by primary key in descending order and limit to 1 document (row)
+    # This will translate into finding the newest inserted document.
+    lists = requests.get(f"{API_URL}/brevets").json()
+
+    # lists of dictionaries
+    # get last element 
+    brevet = lists[-1]
+    return brevet["brevet_dist"], brevet["begin_time"], brevet["checkpoints"]
+
 
 ###
 # Pages
 ###
-
 
 @app.route("/")
 @app.route("/index")
@@ -66,7 +94,7 @@ def _insert_brevet():
     Taken from TodoListApp example
     """
     
-    app.logger.debug(f'Request JSON: {request.get_json()}') # 
+    app.logger.debug(f'Request JSON: {request.get_json()}') 
     try: # read entire request body as JSON
         input_json = request.json
         brevet_dist = input_json["brevet_dist"]
