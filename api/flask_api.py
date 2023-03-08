@@ -23,5 +23,4 @@ connect(host=f"mongodb://{os.environ['MONGODB_HOSTNAME']}:27017/brevetsdb")
 if __name__ == "__main__":
     # Run flask app normally
     # Read DEBUG and PORT from environment variables.
-    input("")
     pass
