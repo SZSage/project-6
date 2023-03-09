@@ -129,15 +129,15 @@
             // View flask_brevets.py for details.
             function calc_times(control) {
                // added distance and begin_date
-               var brevit_dist = document.getElementById("brevet_dist_km").value;
-               var start_time = document.getElementById("begin_date").value;
+               var brevet_dist = document.getElementById("brevet_dist_km").value;
+               var begin_date = document.getElementById("begin_date").value;
                var km = control.find("input[name='km']").val();
                var open_time_field = control.find("input[name='open']");
                var close_time_field = control.find("input[name='close']");
 
-               console.log("start_time = " + start_time);
+               console.log("begin_date = " + begin_date);
                
-              $.getJSON(TIME_CALC_URL, {km: km, brevit_dist: brevit_dist, start_time: start_time}).done( // supply start_time and brevit distance
+              $.getJSON(TIME_CALC_URL, {km: km, brevet_dist: brevet_dist, begin_date: begin_date}).done( // supply begin_date and brevet distance
                 function(data) {
                    var times = data.result;
                    console.log("Got a response: ");
@@ -273,13 +273,13 @@
                            console.log("Successfully fetched! Response: ", data);
                            // Get the brevet distance and start time
                            var brevet_dist = data.result.brevet;
-                           var start_time = data.result.start;
+                           var begin_date = data.result.start;
                            var checkpoints = data.result.checkpoints;
                            var num_items = checkpoints.length;
 
                            // Set the brevet and start values
                            $('#brevet_dist_km').val(brevet_dist);
-                           $('#begin_date').val(start_time);
+                           $('#begin_date').val(begin_date);
                            // For each row in the HTML table
                            $('.control').each(function(index) {
                               var item = $(this); // This is our row
@@ -290,15 +290,15 @@
                                  // Clear the fields
                                  item.find("input[name='km']").val('');
                                  item.find("input[name='miles']").val('');
+                                 item.find("input[name='location']").val('');
                                  item.find("input[name='open']").val('');
                                  item.find("input[name='close']").val('');
-                                 item.find("input[name='location']").val('');
                                  // Set the fields to the values from the checkpoint
-                                 item.find("input[name='km']").val(checkpoints[index].km);
                                  item.find("input[name='miles']").val(checkpoints[index].miles);
+                                 item.find("input[name='km']").val(checkpoints[index].km);
+                                 item.find("input[name='location']").val(checkpoints[index].location);
                                  item.find("input[name='open']").val(checkpoints[index].open);
                                  item.find("input[name='close']").val(checkpoints[index].close);
-                                 item.find("input[name='location']").val(checkpoints[index].location);
                               }
                            });
                         }
