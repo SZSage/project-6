@@ -4,23 +4,23 @@ Resource: Brevet
 from flask import Response, request
 from flask_restful import Resource
 
-# You need to implement this in database/models.py
 from database.models import Brevet
 
-class Brevet(Resource):
-
-    def get(self, id):
-        brevet = Brevet.objects.get(id = id).to_json()
-        return Response(brevet, mimetype = "application/json", status = 200)
+class BrevetResource(Resource):
     
+    def get(self, id):
+        brevet = Brevet.objects.get(id = id).to_json() # Get brevet by id
+        return Response(brevet, mimetype = "application/json", status = 200) # Return brevet as JSON and status code 200 (OK)
+    
+
     def put(self, id):
-        input_json = request.json
+        input_json = request.json # Get JSON payload 
         Brevet.objects.get(id = id).update(**input_json)
-        return "", 200
+        return "", 200 # Return empty body and status code 200 (OK)
     
     def delete(self, id):
-        Brevet.objects.get(id = id).delete()
-        return "", 200
+        Brevet.objects.get(id = id).delete() # Delete brevet by id
+        return "", 200 # Return empty body and status code 200 (OK)
 
 
 
