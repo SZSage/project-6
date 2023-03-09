@@ -1,0 +1,1 @@
+from .models import Brevet #  this is used to import the Brevet class from the models.py file
