@@ -11,7 +11,7 @@ import requests  # Replacement for datetime, based on moment.js
 import acp_times  # Brevet time calculations
 #from mypymongo import brevet_insert, brevet_find # import from mypymongo.py 
 import logging
-import traceback
+
 
 ###
 # Globals
@@ -35,8 +35,8 @@ def brevet_insert(brevet_dist, begin_time, checkpoints):
     Inputs a brevet distance (int), begin time (string), and checkpoints (list of dictionaries)
     """
     
-    _id = requests.post(f"{API_URL}/brevets", json = {"brevet_dist": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}).json
-    return _id
+    _id = requests.post(f"{API_URL}/brevets", json={"brevet_dist": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}).json()
+    return _id # return the id of the inserted document
 
 
 def brevet_find():
@@ -93,7 +93,8 @@ def _insert_brevet():
 
     Taken from TodoListApp example
     """
-    
+
+    app.logger.debug('Received a request to insert a brevet')
     app.logger.debug(f'Request JSON: {request.get_json()}') 
     try: # read entire request body as JSON
         input_json = request.json
@@ -102,14 +103,17 @@ def _insert_brevet():
         checkpoints = input_json["checkpoints"]
 
         brevets = brevet_insert(brevet_dist, begin_time, checkpoints)
+
+        app.logger.debug(f'Response JSON: {{"result": {{}}, "message": "Inserted!", "status": 1, "mongo_id": {brevets}}}')
         return flask.jsonify(result={},
                              message = "Inserted!",
                              status = 1,
                              mongo_id = brevets)
                         
     except Exception as e:
-        traceback.print_exc()
-        return flask.jsonify(result={}, message=e, status=0, mongo_id="None")
+        # traceback.print_exc()
+        # app.logger.error(f'Error occurred while inserting brevet: {e}')
+        return flask.jsonify(result={}, message=str(e), status=0, mongo_id="None")
 
 
 @app.route("/_find_brevet")
@@ -126,7 +130,7 @@ def _find_brevet():
     try:
         brevet_dist, begin_time, checkpoints = brevet_find()   
         return flask.jsonify(
-                result={"brevet": brevet_dist, "start": begin_time, "checkpoints": checkpoints}, 
+                result={"brevet": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}, 
                 status=1,
                 message="Successfully fetched a brevet!")
     except:
@@ -145,26 +149,22 @@ def _calc_times():
     """
     app.logger.debug("Got a JSON request")
     km = request.args.get('km', 999, type=float)
-    brevit_dist = request.args.get("brevit_dist", 999, type=float)
-    start_time = request.args.get("start_time", "2023-02-2000:00", type=str)
-    start_time = arrow.get(start_time, "YYYY-MM-DDTHH:mm")
+    brevet_dist = request.args.get("brevet_dist", 999, type=float)
+    begin_date = request.args.get("begin_date", type=str)
+    begin_date = arrow.get(begin_date, "YYYY-MM-DDTHH:mm")
     
-    app.logger.debug("start_time={}".format(start_time))
+    app.logger.debug("begin_date={}".format(begin_date))
     app.logger.debug("km={}".format(km))
     app.logger.debug("request.args: {}".format(request.args))
-    
-    open_time = acp_times.open_time(km, brevit_dist, start_time).format('YYYY-MM-DDTHH:mm')
-    close_time = acp_times.close_time(km, brevit_dist, start_time).format('YYYY-MM-DDTHH:mm')
+
+    open_time = acp_times.open_time(km, brevet_dist, begin_date).format('YYYY-MM-DDTHH:mm')
+    close_time = acp_times.close_time(km, brevet_dist, begin_date).format('YYYY-MM-DDTHH:mm')
+
     result = {"open": open_time, "close": close_time}
     return flask.jsonify(result=result)
 
 
 #############
 
-app.debug = os.environ["DEBUG"]
-if app.debug:
-    app.logger.setLevel(logging.DEBUG)
-
 if __name__ == "__main__":
-    # write fail case incase PORT and DEBUG are not in the environment variables
     app.run(port=os.environ["PORT"], host="0.0.0.0")
