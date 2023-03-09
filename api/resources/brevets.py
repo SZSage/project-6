@@ -3,24 +3,26 @@ Resource: Brevets
 """
 from flask import Response, request
 from flask_restful import Resource
-import traceback
-# You need to implement this in database/models.py
+import traceback # For debugging
 from database.models import Brevet
 
 class BrevetsResource(Resource):
-    # Get all brevets
+    
     def get(self):
-        json_object = Brevet.objects().to_json()
-        return Response(json_object, mimetype = "application/json", status = 200)
-    # Create a new brevet
+        # Get all brevets
+        json_object = Brevet.objects().to_json() # Serialize MongoEngine query to JSON
+        return Response(json_object, mimetype = "application/json", status = 200) # Return JSON and status code 200 (OK)
+    
     def post(self):
+        # Create new brevet
         try:
-            input_json = request.json
-            result = Brevet(**input_json).save()
-            return {"_id": str(result.id)}, 200
-        except Exception as e:
-            traceback.print_exc()
-            return {"error": str(e)}, 400
+            input_json = request.json # Get JSON payload
+            result = Brevet(**input_json).save() # Create new brevet and save to database 
+            return {"_id": str(result.id)}, 200 # Return id of new brevet and status code 200 (OK)
+        except Exception as e: 
+            traceback.print_exc() # For debugging
+            return {"error": str(e)}, 400 # Return error message and status code 400 (Bad Request)
+        
 # MongoEngine queries:
 # Brevet.objects() : similar to find_all. Returns a MongoEngine query
 # Brevet(...).save() : creates new brevet
