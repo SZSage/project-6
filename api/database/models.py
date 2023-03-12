@@ -25,4 +25,5 @@ class Brevet(Document):
     
     brevet_dist = FloatField(required = True) # brevet distance in km
     begin_time = StringField(required = True) # brevet start time
-    checkpoints = ListField(EmbeddedDocumentField(Checkpoint), required = True) # brevet checkpoints
+    checkpoints = EmbeddedDocumentListField(Checkpoint, required = True) # brevet checkpoints
+  
