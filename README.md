@@ -1,72 +1,70 @@
 # UOCIS322 - Project 6 #
 Brevet time calculator with MongoDB, and a RESTful API!
 
-Read about MongoEngine and Flask-RESTful before you start: [http://docs.mongoengine.org/](http://docs.mongoengine.org/), [https://flask-restful.readthedocs.io/en/latest/](https://flask-restful.readthedocs.io/en/latest/).
-
-## Before you begin
-You *HAVE TO* copy `.env-example` into `.env` and specify your container port numbers there!
-Note that the default values (5000 and 5000) will work!
-
-*DO NOT PLACE LOCAL PORTS IN YOUR COMPOSE FILE!*
 
 ## Overview
 
-You will reuse your code from Project 5, which already has two services:
+This project is a web application that provides a Brevet time calculator, utilizing the RUSA ACP controle time algorithm as described on https://rusa.org/pages/acp-brevet-control-times-calculator. It's an extension of Project-5 (https://github.com/SZSage/project-5), which already includes two essential services, Brevets (implemented with Flask) and MongoDB (used for efficient data storage and retrieval).
 
-* Brevets
-	* The entire web service
-* MongoDB
+The objective of this project is to incorporate the `brevets/` directory from Project-5 and develop a RESTful API service that enables the storage and retrieval of structured data in MongoDB and to replace every database related code in `brevets/` with calls to the new API.
 
-For this project, you will re-organize `Brevets` into two separate services:
-
-* Web (Front-end)
-	* Time calculator (basically everything you had in project 4)
-* API (Back-end)
-	* A RESTful service to expose/store structured data in MongoDB.
 
 ## Tasks
+The steps used to complete this project are as follows,
 
-* Implement a RESTful API in `api/`:
-	* Write a data schema using MongoEngine for Checkpoints and Brevets:
-		* `Checkpoint`:
-			* `distance`: float, required, (checkpoint distance in kilometers), 
-			* `location`: string, optional, (checkpoint location name), 
-			* `open_time`: datetime, required, (checkpoint opening time), 
-			* `close_time`: datetime, required, (checkpoint closing time).
-		* `Brevet`:
-			* `length`: float, required, (brevet distance in kilometers),
-			* `start_time`: datetime, required, (brevet start time),
-			* `checkpoints`: list of `Checkpoint`s, required, (checkpoints).
-	* Using the schema, build a RESTful API with the resource `/brevets/`:
-		* GET `http://API:PORT/api/brevets` should display all brevets stored in the database.
-		* GET `http://API:PORT/api/brevet/ID` should display brevet with id `ID`.
-		* POST `http://API:PORT/api/brevets` should insert brevet object in request into the database.
-		* DELETE `http://API:PORT/api/brevet/ID` should delete brevet with id `ID`.
-		* PUT `http://API:PORT/api/brevet/ID` should update brevet with id `ID` with object in request.
+- Copy over Project 5 
+- Add new Flask service: `api` 
+	- Connect it to the database service: `db` 
+	- Create your API
+	- Test it locally
+- Connect `brevets` to `api`, remove dependency between `brevets` and `db` 
+- Remove PyMongo interface and replace it with requests to the API 
 
-* Copy over `brevets/` from your completed project 5.
-	* Replace every database related code in `brevets/` with calls to the new API.
-		* Remember: AutoGrader will ensure there is NO CONNECTION between `brevets` and `db` services. `brevets` should only operate through `api` and still function the way it did in project 5.
-		* Hint: Submit should send a POST request to the API to insert, Display should send a GET request, and display the last entry.
-	* Remove `config.py` and adjust `flask_brevets.py` to use the `PORT` and `DEBUG` values specified in env variables (see `docker-compose.yml`).
 
-* Update README.md with API documentation added.
+### Back-end (API)
+To implement a RESTful API, a Python script was created (`api/database/models.py`) to define two classes (`Checkpoint` and `Brevet`) using the MongoEngine library for working with MongoDB databases. 
 
-As always you'll turn in your `credentials.ini` through Canvas.
+- `Checkpoint`: an embedded document that contains `miles`, `km`, `location`, and `open`/`close` times.
+- `Brevet`: a MongoDB document that contains `brevet_dist`, `begin_time`, and `checkpoints`.
 
-## Grading Rubric
 
-* If your code works as expected: 100 points. This includes:
-    * API routes as outlined above function exactly the way expected,
-    * Web application works as expected in project 5,
-    * README is updated with the necessary details.
+Using this schema, a Flask-RESTful API was implemented in `api/resources/`.
 
-* If the front-end service does not work, 20 points will be docked.
+- `brevet.py`: allows manipulation of a single Brevet object in the MongoDB database with `GET`, `PUT`, and `DELETE` methods. 
 
-* For each of the 5 requests that do not work, 15 points will be docked.
+	- `GET`: retrieves a Brevet object with specified `ID` and responds with a JSON object and status code `200` (OK).
+	- `PUT`: updates an existing Brevet object with specified `ID` using the JSON payload and returns an empty response with status code `200` (OK).
+	- `DETETE`: deletes an existing Brevet object with specified `ID` and returns an empty response with status code `200` (OK).
 
-* If none of the above work, 5 points will be assigned assuming project builds and runs, and `README` is updated. Otherwise, 0 will be assigned.
+- `brevets.py` manages a collection of Brevets that contains a set of methods `GET` and `POST` to retrieve all Brevets. 
+	- `GET`: returns a JSON object containing all Brevets in database. 
+	- `POST`: get JSON paylod, creates new Brevet, and returns `ID` of new Brevet.
+
+
+The `api.py` file was created to set up a RESTful API that interacts with a MongoDB database using the MongoEngine library. The API contains two endpoints, `/api/brevet/<id>` and `/api/brevets`, which allow for the retrieval of a single brevet document by `ID` and all brevet documents. The Flask app listens on a specified `PORT` and accepts incoming requests. 
+
+
+Finally, the `brevets/flask_brevets.py` file was adjusted to use environment variables to determine the `PORT` and `DEBUG` values. It now uses an API to interact with the MongoDB database that inserts and retrieves data. Two new functions `brevet_insert` and `brevet_find` uses the API to insert a new document into the database and retrieves the newest document. 
+
+
+### Front-end
+
+No new additions/changes were made for the front-end. It remains the same as it was in Project-5.
+
+
+## Testing
+To test these newly implemented APIs, the following `curl` commands are used,
+
+_Note that `API` should be replaced with the API address and `PORT` should be replaced with specified port_.
+
+- `curl -X GET http://API:PORT/api/brevets`: Retrieve and display all brevets stored in the database.
+- `curl -X GET http://API:PORT/api/brevet/ID`: Replace `ID` with the ID of brevet you want to retrieve.
+- `curl -X POST http://API:PORT/api/brevets`: Inserts brevet object into the database.
+- `curl -X DELETE http://API:PORT/api/brevet/ID`: Replace `ID` with the ID of brevet you want to delete.
+- `curl -X POST http://API:PORT/api/brevet/ID`: Replace `ID` with the ID of brevet you want to update.
 
 ## Authors
 
 Michal Young, Ram Durairajan. Updated by Ali Hassani.
+
+Completed by Simon Zhao: simonz@uoregon.edu
