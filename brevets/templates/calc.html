@@ -191,6 +191,7 @@
                   // gets begin date and brevet distance
                   var brevet_dist = document.getElementById("brevet_dist_km").value;
                   var begin_date = document.getElementById("begin_date").value;
+               
                   // create an empty list to hold the checkpoints
                   var checkpoints = [];
 
@@ -272,11 +273,14 @@
                         if (data.status == 1) {
                            console.log("Successfully fetched! Response: ", data);
                            // Get the brevet distance and start time
+                           console.log(data.result.brevet)
                            var brevet_dist = data.result.brevet;
-                           var begin_date = data.result.start;
+                           console.log(data.result.begin_date)
+                           var begin_date = data.result.begin_date; // changed to begin_date
                            var checkpoints = data.result.checkpoints;
                            var num_items = checkpoints.length;
 
+                           console.log("Setting input[name='begin_date'] to: ", data.result.begin_date); // DEBUG
                            // Set the brevet and start values
                            $('#brevet_dist_km').val(brevet_dist);
                            $('#begin_date').val(begin_date);

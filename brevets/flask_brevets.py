@@ -28,14 +28,14 @@ API_PORT = os.environ["API_PORT"]
 API_URL = f"http://{API_ADDR}:{API_PORT}/api/"
 
 
-def brevet_insert(brevet_dist, begin_time, checkpoints):
+def brevet_insert(brevet_dist, begin_date, checkpoints):
     """
     Inserts a new to-do list into the database by calling the API.
     
     Inputs a brevet distance (int), begin time (string), and checkpoints (list of dictionaries)
     """
     
-    _id = requests.post(f"{API_URL}/brevets", json={"brevet_dist": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}).json()
+    _id = requests.post(f"{API_URL}/brevets", json={"brevet_dist": brevet_dist, "begin_date": begin_date, "checkpoints": checkpoints}).json()
     return _id # return the id of the inserted document
 
 
@@ -54,7 +54,7 @@ def brevet_find():
     # lists of dictionaries
     # get last element 
     brevet = lists[-1]
-    return brevet["brevet_dist"], brevet["begin_time"], brevet["checkpoints"]
+    return brevet["brevet_dist"], brevet["begin_date"], brevet["checkpoints"]
 
 
 ###
@@ -99,10 +99,10 @@ def _insert_brevet():
     try: # read entire request body as JSON
         input_json = request.json
         brevet_dist = input_json["brevet_dist"]
-        begin_time = input_json["begin_date"]
+        begin_date = input_json["begin_date"]
         checkpoints = input_json["checkpoints"]
 
-        brevets = brevet_insert(brevet_dist, begin_time, checkpoints)
+        brevets = brevet_insert(brevet_dist, begin_date, checkpoints)
 
         app.logger.debug(f'Response JSON: {{"result": {{}}, "message": "Inserted!", "status": 1, "mongo_id": {brevets}}}')
         return flask.jsonify(result={},
@@ -128,9 +128,9 @@ def _find_brevet():
     Taken from TodoListApp example
     """
     try:
-        brevet_dist, begin_time, checkpoints = brevet_find()   
+        brevet_dist, begin_date, checkpoints = brevet_find()   
         return flask.jsonify(
-                result={"brevet": brevet_dist, "begin_time": begin_time, "checkpoints": checkpoints}, 
+                result={"brevet": brevet_dist, "begin_date": begin_date, "checkpoints": checkpoints}, 
                 status=1,
                 message="Successfully fetched a brevet!")
     except:
@@ -152,7 +152,7 @@ def _calc_times():
     brevet_dist = request.args.get("brevet_dist", 999, type=float)
     begin_date = request.args.get("begin_date", type=str)
     begin_date = arrow.get(begin_date, "YYYY-MM-DDTHH:mm")
-    
+    logging.debug("begin_date={}".format(begin_date)) # debug
     app.logger.debug("begin_date={}".format(begin_date))
     app.logger.debug("km={}".format(km))
     app.logger.debug("request.args: {}".format(request.args))
